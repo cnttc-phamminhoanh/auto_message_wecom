@@ -1,0 +1,23 @@
+{
+  "name": "auto_message_wecom",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:alert": "node scripts/run-job-alert_maintenance.js alert_maintenance >> logs/alert_maintenance.log 2>&1",
+    "dev:tomorow": "node scripts/run-job-tomorow_maintenance.js tomorow_maintenance >> logs/tomorow_maintenance.log 2>&1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "dotenv": "^17.4.2",
+    "mssql": "^12.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
