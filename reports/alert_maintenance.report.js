@@ -8,9 +8,9 @@ module.exports = `
       when dept_name_mt in ('IT') then '8:00'
     end tg, 
     case
-      when dept_name_mt in ('Sock & Embroidering') then '865953693/931122418'
-      when dept_name_mt in ('Mechanic') then '776227674/355321678'
-      when dept_name_mt in ('Electrical maintainance') then 'nguyndng/833675565'
+      when dept_name_mt in ('Sock & Embroidering') then '865953693,931122418,352569641'
+      when dept_name_mt in ('Mechanic') then '776227674,355321678'
+      when dept_name_mt in ('Electrical maintainance') then 'nguyndng,833675565'
       when dept_name_mt in ('IT') then 'germton'
     end as id_acc
   from (
@@ -31,5 +31,5 @@ module.exports = `
       )
     and dif_day >= 0 and x.act_sw = 1
   ) x
-  group by dept_name_mt 
+  group by dept_name_mt
 `;

@@ -1,5 +1,8 @@
-require("dotenv").config({ quiet: process.env.NODE_ENV === "production" });
 const path = require("path");
+require("dotenv").config({
+  path: path.join(__dirname, "../.env"),
+  quiet: process.env.NODE_ENV === "production"
+});
 const tomorowQuery = require("../reports/tomorow_maintenance.report");
 const { executeQuery } = require("../services/report.service");
 const { notifyMaintenanceTomorow } = require("../services/wecom.service");
@@ -22,8 +25,6 @@ const { closePool } = require("../services/sql.service");
       return;
     }
 
-    console.log(tomorowData)
-
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const maintenanceDate = tomorrow.toLocaleDateString("vi-VN", {
@@ -34,7 +35,7 @@ const { closePool } = require("../services/sql.service");
 
     for (const row of tomorowData) {
       await notifyMaintenanceTomorow({
-        users: process.env.WECOM_USERS.split(","),
+        users: row.id_acc.split(","),
         title: "📢 Danh sách bảo trì ngày mai",
         description: "Maintenance List For Tomorrow / 明天进行维护",
         image: process.env.TOMOROW_IMAGE,
