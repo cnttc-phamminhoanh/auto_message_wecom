@@ -10,12 +10,31 @@ async function post(data) {
   return result;
 }
 
+async function exportShippingPost(data) {
+  const { data: result } = await axios.post(process.env.EXPORT_SHIPPING_WEBHOOK, data);
+
+  if (result.errcode !== 0) {
+    throw new Error(result.errmsg);
+  }
+
+  return result;
+}
+
 async function sendMentionMessage(users, totalDevices) {
   return post({
     msgtype: "text",
     text: {
       content: `🚨 LƯU Ý / NOTE / 注意 \n`,
       mentioned_list: users
+    }
+  });
+}
+
+async function sendMarkdown(content) {
+  return exportShippingPost({
+    msgtype: "markdown",
+    markdown: {
+      content
     }
   });
 }
@@ -207,7 +226,44 @@ async function notifyMaintenanceAlert({
   await sendMentionMessage(users, totalDevices);
 }
 
+async function notifySOChange({
+  id,
+  soNo,
+  soId,
+  custPo,
+  customer,
+  modifiedUser,
+  modifiedAt,
+  changeDetail
+}) {
+  console.log(`[${new Date().toISOString()}] Sending alert change SO... - ID: ${id}`);
+
+  const formatDate = new Date(modifiedAt).toLocaleString("sv-SE");
+
+  const detail = changeDetail
+    .replace(/^\/+/, "")
+    .split("/")
+    .map(item => `• ${item.replace(/~/g, " ➜ ")}`)
+    .join("\n");
+
+const message = `# 🔄 PO Change for Merchandising
+
+> **SO No:** ${soNo}
+> **SO ID:** ${soId}
+> **Cust PO:** ${custPo || ""}
+> **Customer:** ${customer || ""}
+> **Modified At:** ${formatDate}
+> **Modified User:** ${modifiedUser}
+
+<font color="warning">Change Details</font>
+
+${detail}`;
+
+  return sendMarkdown(message);
+}
+
 module.exports = {
   notifyMaintenanceTomorow,
-  notifyMaintenanceAlert
+  notifyMaintenanceAlert,
+  notifySOChange
 };
