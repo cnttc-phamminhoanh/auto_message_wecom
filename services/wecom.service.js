@@ -30,15 +30,6 @@ async function sendMentionMessage(users, totalDevices) {
   });
 }
 
-async function sendMarkdown(content) {
-  return exportShippingPost({
-    msgtype: "markdown",
-    markdown: {
-      content
-    }
-  });
-}
-
 async function sendMaintenanceCardTomorow({
   title,
   description,
@@ -174,6 +165,15 @@ async function sendMaintenanceCardAlert({
   });
 }
 
+async function sendMarkdown(content) {
+  return exportShippingPost({
+    msgtype: "markdown",
+    markdown: {
+      content
+    }
+  });
+}
+
 async function notifyMaintenanceTomorow({
   users,
   title,
@@ -238,11 +238,11 @@ async function notifySOChange({
 }) {
   console.log(`[${new Date().toISOString()}] Sending alert change SO... - ID: ${id}`);
 
-  const formatDate = new Date(modifiedAt).toLocaleString("sv-SE");
+  // const formatDate = new Date(modifiedAt).toLocaleString("sv-SE");
 
   const detail = changeDetail
-    .replace(/^\/+/, "")
-    .split("/")
+    .replace(/^\/+/, "") // Xóa dấu / ở đầu chuỗi. ^ nghĩa là đầu chuỗi. \/+ nghĩa là một hoặc nhiều dấu / Ví dụ: /Qty: 0.1~0.2/Price: 0~0.1 thành Qty: 0.1~0.2/Price: 0~0.1
+    .split("/") // Cắt chuỗi thành mảng theo dấu /.
     .map(item => `• ${item.replace(/~/g, " ➜ ")}`)
     .join("\n");
 
@@ -252,7 +252,7 @@ const message = `# 🔄 PO Change for Merchandising
 > **SO ID:** ${soId}
 > **Cust PO:** ${custPo || ""}
 > **Customer:** ${customer || ""}
-> **Modified At:** ${formatDate}
+> **Modified At:** ${modifiedAt}
 > **Modified User:** ${modifiedUser}
 
 <font color="warning">Change Details</font>

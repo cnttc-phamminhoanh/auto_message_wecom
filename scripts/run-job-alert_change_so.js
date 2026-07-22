@@ -47,7 +47,7 @@ const { getPool } = require("../services/sql.service");
           .input("id", row.id)
           .query(`
               UPDATE [RDS].erp_t8_GI.dbo.shipping_ctrl_so
-              SET
+                SET
                   send_status = 1,
                   send_time = GETDATE()
               WHERE id=@id
