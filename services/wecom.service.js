@@ -1,4 +1,6 @@
 const axios = require("axios");
+const fs = require("fs");
+const FormData = require("form-data");
 
 async function post(data) {
   const { data: result } = await axios.post(process.env.WECOM_WEBHOOK, data);
@@ -18,6 +20,37 @@ async function exportShippingPost(data) {
   }
 
   return result;
+}
+
+async function uploadFile(filePath) {
+  const form = new FormData();
+
+  form.append("media", fs.createReadStream(filePath));
+
+  const webhook = new URL(process.env.EXPORT_SHIPPING_WEBHOOK);
+
+  const uploadUrl = `https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media?key=${webhook.searchParams.get("key")}&type=file`;
+
+  const { data: result } = await axios.post(uploadUrl, form, {
+    headers: form.getHeaders(),
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity
+  });
+
+  if (result.errcode !== 0) {
+    throw new Error(result.errmsg);
+  }
+
+  return result.media_id;
+}
+
+async function sendFile(mediaId) {
+  return exportShippingPost({
+    msgtype: "file",
+    file: {
+      media_id: mediaId
+    }
+  });
 }
 
 async function sendMentionMessage(users, totalDevices) {
@@ -226,38 +259,47 @@ async function notifyMaintenanceAlert({
   await sendMentionMessage(users, totalDevices);
 }
 
-async function notifySOChange({
-  id,
-  soNo,
-  soId,
-  custPo,
-  customer,
-  modifiedUser,
-  modifiedAt,
-  changeDetail
-}) {
-  console.log(`[${new Date().toISOString()}] Sending alert change SO... - ID: ${id}`);
+async function notifySOChange(data) {
+  const now = new Date().toLocaleString("sv-SE");
 
-  // const formatDate = new Date(modifiedAt).toLocaleString("sv-SE");
+  const totalOrders = data.length;
 
-  const detail = changeDetail
-    .replace(/^\/+/, "") // Xóa dấu / ở đầu chuỗi. ^ nghĩa là đầu chuỗi. \/+ nghĩa là một hoặc nhiều dấu / Ví dụ: /Qty: 0.1~0.2/Price: 0~0.1 thành Qty: 0.1~0.2/Price: 0~0.1
-    .split("/") // Cắt chuỗi thành mảng theo dấu /.
-    .map(item => `• ${item.replace(/~/g, " ➜ ")}`)
-    .join("\n");
+  const qtyChanged = data.filter(
+    x => Number(x["Old Order Qty"] ?? -999999) !== Number(x["New Order Qty"] ?? -999999)
+  ).length;
 
-const message = `# 🔄 PO Change for Merchandising
+  const priceChanged = data.filter(
+    x => Number(x["Old Price"] ?? -999999) !== Number(x["New Price"] ?? -999999)
+  ).length;
 
-> **SO No:** ${soNo}
-> **SO ID:** ${soId}
-> **Cust PO:** ${custPo || ""}
-> **Customer:** ${customer || ""}
-> **Modified At:** ${modifiedAt}
-> **Modified User:** ${modifiedUser}
+  const crdChanged = data.filter(
+    x => (x["Old Customer CRD"] || "") !== (x["New Customer CRD"] || "")
+  ).length;
 
-<font color="warning">Change Details</font>
+  const countryChanged = data.filter(
+    x => (x["Old Country"] || "") !== (x["New Country"] || "")
+  ).length;
 
-${detail}`;
+  const packingChanged = data.filter(
+    x => (x["Old Packing Method"] || "") !== (x["New Packing Method"] || "")
+  ).length;
+
+  const message = `# 🔄 Sale Order Change Notification
+
+> **Generated** : ${now}
+
+### Summary
+──────────────
+
+> **Total Orders** : ${totalOrders}
+
+> **Quantity Changed** : ${qtyChanged}
+> **Price Changed** : ${priceChanged}
+> **CRD Changed** : ${crdChanged}
+> **Country Changed** : ${countryChanged}
+> **Packing Method Changed** : ${packingChanged}
+
+> The detailed Excel report is attached below.`;
 
   return sendMarkdown(message);
 }
@@ -265,5 +307,7 @@ ${detail}`;
 module.exports = {
   notifyMaintenanceTomorow,
   notifyMaintenanceAlert,
-  notifySOChange
+  notifySOChange,
+  uploadFile,
+  sendFile
 };

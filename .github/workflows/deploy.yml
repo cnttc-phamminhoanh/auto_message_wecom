@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Update source
+        run: |
+          set -e
+          cd /home/it/auto_message_wecom
+          git fetch origin
+          git reset --hard origin/master
+          chmod +x *.sh
+
+      - name: Install packages
+        run: |
+          cd /home/it/auto_message_wecom
+          /home/it/.nvm/versions/node/v22.18.0/bin/npm ci
