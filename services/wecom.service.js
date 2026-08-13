@@ -13,7 +13,10 @@ async function post(data) {
 }
 
 async function exportShippingPost(data) {
-  const { data: result } = await axios.post(process.env.EXPORT_SHIPPING_WEBHOOK, data);
+  const { data: result } = await axios.post(
+    process.env.EXPORT_SHIPPING_WEBHOOK,
+    data,
+  );
 
   if (result.errcode !== 0) {
     throw new Error(result.errmsg);
@@ -34,7 +37,7 @@ async function uploadFile(filePath) {
   const { data: result } = await axios.post(uploadUrl, form, {
     headers: form.getHeaders(),
     maxBodyLength: Infinity,
-    maxContentLength: Infinity
+    maxContentLength: Infinity,
   });
 
   if (result.errcode !== 0) {
@@ -48,18 +51,31 @@ async function sendFile(mediaId) {
   return exportShippingPost({
     msgtype: "file",
     file: {
-      media_id: mediaId
-    }
+      media_id: mediaId,
+    },
   });
 }
 
-async function sendMentionMessage(users, totalDevices) {
+const DEPARTMENT_LABELS = {
+  "Sock & Embroidering": "部门/ Bộ phận: 印绣设备保养/ Bảo trì thiết bị in và thêu",
+  "Mechanic": "部门/ Bộ phận: 缝纫机保养/ Bảo trì máy may",
+  "Electrical maintainance": "部门/ Bộ phận: 电气维护/ Bảo trì điện",
+  "IT": "部门/ Bộ phận: IT",
+};
+
+async function sendMentionMessage(users, departments = []) {
+  const departmentLines = [...new Set(departments)]
+    .map((department) => DEPARTMENT_LABELS[department])
+    .filter(Boolean);
+
+  const content = ["🚨 LƯU Ý / NOTE / 注意", ...departmentLines].join("\n");
+
   return post({
     msgtype: "text",
     text: {
-      content: `🚨 LƯU Ý / NOTE / 注意 \n`,
-      mentioned_list: users
-    }
+      content,
+      mentioned_list: users,
+    },
   });
 }
 
@@ -70,61 +86,52 @@ async function sendMaintenanceCardTomorow({
   departments,
   totalDevices,
   maintenanceDate,
-  reportUrl
+  reportUrl,
 }) {
   return post({
     msgtype: "template_card",
     template_card: {
       card_type: "news_notice",
-      
-      // Tiêu đề
       main_title: {
         title,
-        desc: description
+        desc: description,
       },
-      // Banner
       card_image: {
         url: image,
-        aspect_ratio: 2.25
+        aspect_ratio: 2.25,
       },
-
-      // Thông tin
       horizontal_content_list: [
         {
           keyname: "🏢 Phòng ban / Dept / 部门",
-          value: departments.join(", ")
+          value: departments.join(", "),
         },
         {
           keyname: "📦 Số lượng / Quantity / 数量",
-          value: totalDevices
+          value: totalDevices,
         },
         {
           keyname: "📅 Thời gian / Time / 时间",
-          value: maintenanceDate
-        }
+          value: maintenanceDate,
+        },
       ],
-
-      // Nội dung nhắc nhở
       quote_area: {
         type: 0,
-        quote_text: "⚠ Vui lòng theo dõi! / Please pay attention! / 请留意!"
+        quote_text: "⚠ Vui lòng theo dõi! / Please pay attention! / 请留意!",
       },
-
-      // Nút
       jump_list: [
         {
           type: 1,
           title: "📄 View Details / 查看详情",
-          url: reportUrl
-        }
+          url: reportUrl,
+        },
       ],
 
       // Click toàn bộ card
       card_action: {
         type: 1,
-        url: reportUrl
-      }
-    }
+        url: reportUrl,
+      },
+    },
   });
 }
 
@@ -136,7 +143,7 @@ async function sendMaintenanceCardAlert({
   totalDevices,
   lateQty,
   todayQty,
-  reportUrl
+  reportUrl,
 }) {
   return post({
     msgtype: "template_card",
@@ -151,33 +158,33 @@ async function sendMaintenanceCardAlert({
       // Banner
       card_image: {
         url: image,
-        aspect_ratio: 2.25
+        aspect_ratio: 2.25,
       },
 
       // Thông tin
       horizontal_content_list: [
         {
           keyname: "🏢 Phòng ban / Dept / 部门",
-          value: departments.join(", ")
+          value: departments.join(", "),
         },
         {
           keyname: "📦 Số lượng / Quantity / 数量",
-          value: totalDevices
+          value: totalDevices,
         },
         {
           keyname: "🔴 Trễ / Late / 迟到",
-          value: lateQty
+          value: lateQty,
         },
         {
           keyname: "🟠 Hôm nay / Today / 今天",
-          value: todayQty
-        }
+          value: todayQty,
+        },
       ],
 
       // Nội dung nhắc nhở
       quote_area: {
         type: 0,
-        quote_text: "⚠ Vui lòng theo dõi! / Please pay attention! / 请留意!"
+        quote_text: "⚠ Vui lòng theo dõi! / Please pay attention! / 请留意!",
       },
 
       // Nút
@@ -185,16 +192,16 @@ async function sendMaintenanceCardAlert({
         {
           type: 1,
           title: "📄 View Details / 查看详情",
-          url: reportUrl
-        }
+          url: reportUrl,
+        },
       ],
 
       // Click toàn bộ card
       card_action: {
         type: 1,
-        url: reportUrl
-      }
-    }
+        url: reportUrl,
+      },
+    },
   });
 }
 
@@ -202,8 +209,8 @@ async function sendMarkdown(content) {
   return exportShippingPost({
     msgtype: "markdown",
     markdown: {
-      content
-    }
+      content,
+    },
   });
 }
 
@@ -215,7 +222,7 @@ async function notifyMaintenanceTomorow({
   departments,
   totalDevices,
   maintenanceDate,
-  reportUrl
+  reportUrl,
 }) {
   console.log("Sending tomorow card...");
   await sendMaintenanceCardTomorow({
@@ -225,11 +232,11 @@ async function notifyMaintenanceTomorow({
     departments,
     totalDevices,
     maintenanceDate,
-    reportUrl
+    reportUrl,
   });
 
   console.log("Sending tomorow mention...");
-  await sendMentionMessage(users, totalDevices);
+  await sendMentionMessage(users, departments);
 }
 
 async function notifyMaintenanceAlert({
@@ -241,7 +248,7 @@ async function notifyMaintenanceAlert({
   totalDevices,
   lateQty,
   todayQty,
-  reportUrl
+  reportUrl,
 }) {
   console.log("Sending alert card...");
   await sendMaintenanceCardAlert({
@@ -252,11 +259,11 @@ async function notifyMaintenanceAlert({
     totalDevices,
     lateQty,
     todayQty,
-    reportUrl
+    reportUrl,
   });
 
   console.log("Sending alert mention...");
-  await sendMentionMessage(users, totalDevices);
+  await sendMentionMessage(users, departments);
 }
 
 async function notifySOChange(data) {
@@ -265,23 +272,26 @@ async function notifySOChange(data) {
   const totalOrders = data.length;
 
   const qtyChanged = data.filter(
-    x => Number(x["Old Order Qty"] ?? -999999) !== Number(x["New Order Qty"] ?? -999999)
+    (x) =>
+      Number(x["Old Order Qty"] ?? -999999) !==
+      Number(x["New Order Qty"] ?? -999999),
   ).length;
 
   const priceChanged = data.filter(
-    x => Number(x["Old Price"] ?? -999999) !== Number(x["New Price"] ?? -999999)
+    (x) =>
+      Number(x["Old Price"] ?? -999999) !== Number(x["New Price"] ?? -999999),
   ).length;
 
   const crdChanged = data.filter(
-    x => (x["Old Customer CRD"] || "") !== (x["New Customer CRD"] || "")
+    (x) => (x["Old Customer CRD"] || "") !== (x["New Customer CRD"] || ""),
   ).length;
 
   const countryChanged = data.filter(
-    x => (x["Old Country"] || "") !== (x["New Country"] || "")
+    (x) => (x["Old Country"] || "") !== (x["New Country"] || ""),
   ).length;
 
   const packingChanged = data.filter(
-    x => (x["Old Packing Method"] || "") !== (x["New Packing Method"] || "")
+    (x) => (x["Old Packing Method"] || "") !== (x["New Packing Method"] || ""),
   ).length;
 
   const message = `# 🔄 Sale Order Change Notification
@@ -309,5 +319,5 @@ module.exports = {
   notifyMaintenanceAlert,
   notifySOChange,
   uploadFile,
-  sendFile
+  sendFile,
 };
