@@ -12,6 +12,16 @@ async function post(data) {
   return result;
 }
 
+async function post_group_MatiGanhTeam(data) {
+  const { data: result } = await axios.post(process.env.WeCOM_WEHOOK_MATI_GANH_TEAM, data);
+
+  if (result.errcode !== 0) {
+    throw new Error(result.errmsg);
+  }
+
+  return result;
+}
+
 async function exportShippingPost(data) {
   const { data: result } = await axios.post(
     process.env.EXPORT_SHIPPING_WEBHOOK,
@@ -327,7 +337,7 @@ const sendText = (
     );
   }
 
-  return post({
+  return post_group_MatiGanhTeam({
     msgtype: 'text',
     text: {
       content,
