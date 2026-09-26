@@ -12,6 +12,16 @@ async function post(data) {
   return result;
 }
 
+async function post_group_MatiGanhTeam(data) {
+  const { data: result } = await axios.post(process.env.WeCOM_WEHOOK_MATI_GANH_TEAM, data);
+
+  if (result.errcode !== 0) {
+    throw new Error(result.errmsg);
+  }
+
+  return result;
+}
+
 async function exportShippingPost(data) {
   const { data: result } = await axios.post(
     process.env.EXPORT_SHIPPING_WEBHOOK,
@@ -314,10 +324,74 @@ async function notifySOChange(data) {
   return sendMarkdown(message);
 }
 
+/**
+ * Gửi text message
+ */
+const sendText = (
+  content,
+  mentionedList = []
+) => {
+  if (!content) {
+    throw new Error(
+      'Nội dung thông báo WeCom không được để trống'
+    );
+  }
+
+  return post_group_MatiGanhTeam({
+    msgtype: 'text',
+    text: {
+      content,
+      mentioned_list: mentionedList
+    }
+  });
+};
+/**
+ * Nội dung thông báo MO không được cập nhập WO
+ */
+const buildMoNotification = () => {
+  return [
+    '@IT_Huyền Sương(Suzy)',
+    '',
+    'MO không được cập nhập WO',
+    '',
+    'select m.sheet_no, m.sheet_id, m.sheet_qty, m.goods_no, m.def02, m.def01',
+    'from [rds].[erp_t8_gi].[dbo].sfc_mo2 m',
+    'inner join [rds].[erp_t8_gi].[dbo].sfc_mo1 m1 on m.sheet_no = m1.sheet_no',
+    'inner join ig_pywrkord o on m1.sheet_no = o.ext_field07',
+    "where m1.sheet_date >= '2025-01-01'",
+    '    and m1.sheet_kind = 0',
+    '    and m.def16 is null',
+    "    and m1.sheet_type not in ('MOGIC', 'MOGICW')",
+    "    and m.sheet_no not in ('MOGID260515034', 'MOGID260410002', 'MOGID260512006')"
+  ].join('\n');
+};
+
+// gửi thông báo WeCom với nội dung được xây dựng từ dữ liệu
+const sendSheetNotification = async () => {
+  const content = buildMoNotification();
+
+  /**
+   * User ID thật của Suzy trên WeCom
+   */
+  const mentionUserId =
+    process.env.WECOM_MENTION_USER_ID;
+
+  const mentionedList =
+    mentionUserId
+      ? [mentionUserId]
+      : [];
+
+  return sendText(
+    content,
+    mentionedList
+  );
+};
+
 module.exports = {
   notifyMaintenanceTomorow,
   notifyMaintenanceAlert,
   notifySOChange,
   uploadFile,
   sendFile,
+  sendSheetNotification,
 };
