@@ -32,6 +32,7 @@ module.exports = `
             HAVING SUM(CASE WHEN maintenance_value <> 0 THEN 1 ELSE 0 END) > 0
           )
         and x.act_sw = 1
+        and equ_no NOT IN ('TESTTB6', 'TESTTB7', 'TESTTB8')
   ) x
   where dif_day = -1
   group by dept_name_mt

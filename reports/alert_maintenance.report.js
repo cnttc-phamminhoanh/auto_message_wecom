@@ -29,7 +29,8 @@ module.exports = `
         GROUP BY equ_no
         HAVING SUM(CASE WHEN maintenance_value <> 0 THEN 1 ELSE 0 END) > 0
       )
-    and dif_day >= 0 and x.act_sw = 1
+      and dif_day >= 0 and x.act_sw = 1
+      and equ_no NOT IN ('TESTTB6', 'TESTTB7', 'TESTTB8')
   ) x
   group by dept_name_mt
 `;
