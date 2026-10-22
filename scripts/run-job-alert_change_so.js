@@ -55,10 +55,7 @@ const { getPool } = require("../services/sql.service");
     const pool = await getPool();
 
     await pool.request().query(`
-      EXEC ('
-          USE erp_t8_GI;
-          TRUNCATE TABLE dbo.shipping_ctrl_so;
-      ') AT [RDS];
+      TRUNCATE TABLE erp_t8_GI.dbo.shipping_ctrl_so;
     `);
 
     await fs.unlink(filePath);
