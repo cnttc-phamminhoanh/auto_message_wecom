@@ -1,14 +1,13 @@
 const axios = require("axios");
 const {
-  getAdjustedDueDay,
+  buildEffectiveDueMap,
   businessToday,
   daysBetween,
-  fmtDate,
 } = require("../utils/eqm-dates");
 const {
   getHolidays,
   getDevicesForOverdueCheck,
-} = require("../repositories/eqm.repository");
+} = require("../reports/eqm.repository");
 
 /** Mapping mnt_dept_no → WeCom Account ID */
 const DEPT_MENTION_MAP = {
@@ -19,7 +18,7 @@ const DEPT_MENTION_MAP = {
 };
 
 /**
- * Tính danh sách thiết bị trễ hạn theo đúng logic local-api
+ * Tính danh sách thiết bị trễ hạn theo đúng logic cascade (due-schedule.service.js)
  */
 async function getOverdueSummary() {
   const today = businessToday();
@@ -29,6 +28,9 @@ async function getOverdueSummary() {
   console.log(`[EQM] Today (GMT+7): ${today}`);
   console.log(`[EQM] Số ngày lễ lấy được: ${holidaySet.size}`);
   console.log(`[EQM] Tổng thiết bị lấy từ DB: ${devices.length}`);
+
+  // Cascade toàn cục
+  const effectiveMap = buildEffectiveDueMap(devices, holidaySet);
 
   const overdue = [];
 
@@ -41,15 +43,7 @@ async function getOverdueSummary() {
       continue;
     }
 
-    const due = getAdjustedDueDay(
-      {
-        max_mt_date: d.max_mt_date,
-        use_date: d.use_date,
-        maintenance_type: d.maintenance_type,
-      },
-      holidaySet,
-    );
-
+    const due = effectiveMap.get(d.equ_no);
     if (!due) continue;
 
     const diff = daysBetween(due, today);
@@ -64,7 +58,9 @@ async function getOverdueSummary() {
     });
   }
 
-  console.log(`[EQM] Số thiết bị trễ hạn sau khi tính: ${overdue.length}`);
+  console.log(
+    `[EQM] Số thiết bị trễ hạn sau khi tính (cascade): ${overdue.length}`,
+  );
 
   // Group theo mnt_dept_no
   const byDept = {};

@@ -4,14 +4,16 @@ require("dotenv").config({
   quiet: true,
 });
 
-const { closePool } = require("../config/database");
+const { closePool } = require("../services/sql.service.js");
 const { sendOverdueSummary } = require("../services/wecom.eqm.service");
 
 (async () => {
   const jobName = "eqm_overdue";
 
   try {
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`,
+    );
 
     const webhook =
       process.env.EQM_OVERDUE_WEBHOOK ||
@@ -24,14 +26,23 @@ const { sendOverdueSummary } = require("../services/wecom.eqm.service");
     const result = await sendOverdueSummary(webhook);
 
     if (result.sent) {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: Đã gửi ${result.total} thiết bị trễ`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: Đã gửi ${result.total} thiết bị trễ`,
+      );
     } else {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: Không có dữ liệu trễ → bỏ qua`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: Không có dữ liệu trễ → bỏ qua`,
+      );
     }
 
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: === COMPLETED ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName}: === COMPLETED ===`,
+    );
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] [JOB] ${jobName}: === FAILED ===`, err);
+    console.error(
+      `[${new Date().toISOString()}] [JOB] ${jobName}: === FAILED ===`,
+      err,
+    );
     process.exit(1);
   } finally {
     await closePool();
