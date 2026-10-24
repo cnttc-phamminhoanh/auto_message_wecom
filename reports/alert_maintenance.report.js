@@ -19,13 +19,13 @@ module.exports = `
       case when dif_day = 0 then 1 else 0 end as diff_days_today,
       case when dif_day <> 0 then 1 else 0 end as diff_days_late,
       case when d.dept_name in ('Sock', 'Embroidering') then 'Sock & Embroidering' else d.dept_name end as dept_name_mt
-    FROM [RDS].erp_t8_GI.dbo.v_eqm_bas_mt_def02_GC x
-    inner join [RDS].erp_t8_GI.dbo.bas_emp e on e.emp_no = x.emp_no
-    inner join [RDS].erp_t8_GI.dbo.bas_dept d on d.dept_no = e.dept_no
+    FROM erp_t8_GI.dbo.v_eqm_bas_mt_def02_GC x
+    inner join erp_t8_GI.dbo.bas_emp e on e.emp_no = x.emp_no
+    inner join erp_t8_GI.dbo.bas_dept d on d.dept_no = e.dept_no
     WHERE
       equ_no IN (
         SELECT equ_no
-        FROM [RDS].erp_t8_GI.dbo.v_eqm_bas_mt_def02_GC
+        FROM erp_t8_GI.dbo.v_eqm_bas_mt_def02_GC
         GROUP BY equ_no
         HAVING SUM(CASE WHEN maintenance_value <> 0 THEN 1 ELSE 0 END) > 0
       )

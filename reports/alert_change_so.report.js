@@ -17,7 +17,7 @@ module.exports = `
     new_country as [New Country],
     old_pac_method as [Old Packing Method],
     new_pac_method as [New Packing Method]
-  FROM [RDS].erp_t8_GI.dbo.shipping_ctrl_so
+  FROM erp_t8_GI.dbo.shipping_ctrl_so
   WHERE send_status = 0
   ORDER BY modified_at ASC, id ASC;
 `
