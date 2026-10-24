@@ -1,4 +1,4 @@
-const { getPool, sql } = require("../config/database");
+const { getPool } = require("../services/sql.service");
 
 async function getHolidays() {
   const pool = await getPool();
@@ -14,7 +14,7 @@ async function getHolidays() {
         return d.toISOString().slice(0, 10);
       }
       return String(d).slice(0, 10);
-    })
+    }),
   );
 }
 
