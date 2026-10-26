@@ -7,6 +7,18 @@ const tomorowQuery = require("../reports/tomorow_maintenance.report");
 const { executeQuery } = require("../services/report.service");
 const { notifyMaintenanceTomorow } = require("../services/wecom.service");
 const { closePool } = require("../services/sql.service");
+const {
+  buildEffectiveDueMap,
+  businessToday,
+  daysBetween,
+} = require("../utils/eqm-dates");
+
+const DEPT_ID_ACC = {
+  "Sock & Embroidering": "865953693,931122418,352569641",
+  Mechanic: "776227674,355321678",
+  "Electrical maintainance": "nguyndng,833675565",
+  IT: "germton,379180014",
+};
 
 (async () => {
   const jobName = process.argv[2];
@@ -18,9 +30,39 @@ const { closePool } = require("../services/sql.service");
   try {
     console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`);
 
-    const tomorowData = await executeQuery(tomorowQuery)
+    const [rows, holidayRows] = await Promise.all([
+      executeQuery(tomorowQuery),
+      executeQuery(`SELECT holiday_date FROM hr_holiday`),
+    ]);
 
-    if (!Array.isArray(tomorowData) || tomorowData.length === 0) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
+      return;
+    }
+
+    const holidaySet = new Set(
+      (holidayRows || []).map((r) => {
+        const d = r.holiday_date;
+        if (d instanceof Date) return d.toISOString().slice(0, 10);
+        return String(d).slice(0, 10);
+      }),
+    );
+
+    const effectiveMap = buildEffectiveDueMap(rows, holidaySet);
+    const today = businessToday();
+
+    const byDept = new Map();
+    for (const row of rows) {
+      const due = effectiveMap.get(row.equ_no);
+      if (!due) continue;
+      if (daysBetween(today, due) !== 1) continue;
+
+      const dept = row.dept_name_mt;
+      if (!dept) continue;
+      byDept.set(dept, (byDept.get(dept) || 0) + 1);
+    }
+
+    if (byDept.size === 0) {
       console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
       return;
     }
@@ -33,14 +75,17 @@ const { closePool } = require("../services/sql.service");
       year: "numeric"
     });
 
-    for (const row of tomorowData) {
+    for (const [dept, qty] of byDept) {
+      const idAcc = DEPT_ID_ACC[dept];
+      if (!idAcc) continue;
+
       await notifyMaintenanceTomorow({
-        users: row.id_acc.split(","),
+        users: idAcc.split(","),
         title: "📢 Danh sách bảo trì ngày mai",
         description: "Maintenance List For Tomorrow / 明天进行维护",
         image: process.env.TOMOROW_IMAGE,
-        departments: [row.dept_name_mt],
-        totalDevices: row.qty,
+        departments: [dept],
+        totalDevices: qty,
         maintenanceDate,
         reportUrl: process.env.REPORT_URL
       });
