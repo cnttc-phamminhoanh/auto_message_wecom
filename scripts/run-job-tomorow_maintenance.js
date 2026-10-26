@@ -1,7 +1,7 @@
 const path = require("path");
 require("dotenv").config({
   path: path.join(__dirname, "../.env"),
-  quiet: process.env.NODE_ENV === "production"
+  quiet: process.env.NODE_ENV === "production",
 });
 const tomorowQuery = require("../reports/tomorow_maintenance.report");
 const { executeQuery } = require("../services/report.service");
@@ -12,6 +12,8 @@ const {
   businessToday,
   daysBetween,
 } = require("../utils/eqm-dates");
+
+const PENDING_APPROVAL = "pending_approval";
 
 const DEPT_ID_ACC = {
   "Sock & Embroidering": "865953693,931122418,352569641",
@@ -28,7 +30,9 @@ const DEPT_ID_ACC = {
   }
 
   try {
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`,
+    );
 
     const [rows, holidayRows] = await Promise.all([
       executeQuery(tomorowQuery),
@@ -36,7 +40,9 @@ const DEPT_ID_ACC = {
     ]);
 
     if (!Array.isArray(rows) || rows.length === 0) {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`,
+      );
       return;
     }
 
@@ -55,7 +61,12 @@ const DEPT_ID_ACC = {
     for (const row of rows) {
       const due = effectiveMap.get(row.equ_no);
       if (!due) continue;
-      if (daysBetween(today, due) !== 1) continue;
+
+      const diff = daysBetween(today, due);
+      if (diff !== 1) continue;
+
+      // chờ duyệt + trễ → không hiện (mai không phải trễ, nhưng giữ rule thống nhất)
+      if (row.maintenance_status === PENDING_APPROVAL && diff < 0) continue;
 
       const dept = row.dept_name_mt;
       if (!dept) continue;
@@ -63,7 +74,9 @@ const DEPT_ID_ACC = {
     }
 
     if (byDept.size === 0) {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`,
+      );
       return;
     }
 
@@ -72,7 +85,7 @@ const DEPT_ID_ACC = {
     const maintenanceDate = tomorrow.toLocaleDateString("vi-VN", {
       day: "2-digit",
       month: "2-digit",
-      year: "numeric"
+      year: "numeric",
     });
 
     for (const [dept, qty] of byDept) {
@@ -87,13 +100,18 @@ const DEPT_ID_ACC = {
         departments: [dept],
         totalDevices: qty,
         maintenanceDate,
-        reportUrl: process.env.REPORT_URL
+        reportUrl: process.env.REPORT_URL,
       });
     }
 
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName} === COMPLETED ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName} === COMPLETED ===`,
+    );
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] [JOB] ${jobName} === FAILED ===`, err);
+    console.error(
+      `[${new Date().toISOString()}] [JOB] ${jobName} === FAILED ===`,
+      err,
+    );
     process.exit(1);
   } finally {
     await closePool();

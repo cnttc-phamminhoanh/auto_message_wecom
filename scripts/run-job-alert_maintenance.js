@@ -1,7 +1,7 @@
 const path = require("path");
 require("dotenv").config({
   path: path.join(__dirname, "../.env"),
-  quiet: process.env.NODE_ENV === "production"
+  quiet: process.env.NODE_ENV === "production",
 });
 const alertQuery = require("../reports/alert_maintenance.report");
 const { executeQuery } = require("../services/report.service");
@@ -12,6 +12,8 @@ const {
   businessToday,
   daysBetween,
 } = require("../utils/eqm-dates");
+
+const PENDING_APPROVAL = "pending_approval";
 
 const DEPT_ID_ACC = {
   "Sock & Embroidering": "865953693,931122418,352569641",
@@ -28,7 +30,9 @@ const DEPT_ID_ACC = {
   }
 
   try {
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName}: === START ===`,
+    );
 
     const [rows, holidayRows] = await Promise.all([
       executeQuery(alertQuery),
@@ -36,7 +40,9 @@ const DEPT_ID_ACC = {
     ]);
 
     if (!Array.isArray(rows) || rows.length === 0) {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`,
+      );
       return;
     }
 
@@ -57,7 +63,10 @@ const DEPT_ID_ACC = {
       if (!due) continue;
 
       const diff = daysBetween(today, due);
-      if (diff > 0) continue;
+      if (diff > 0) continue; // chỉ hôm nay + trễ
+
+      // đang chờ duyệt mà đã trễ → không hiển thị / không báo
+      if (row.maintenance_status === PENDING_APPROVAL && diff < 0) continue;
 
       const dept = row.dept_name_mt;
       if (!dept) continue;
@@ -72,7 +81,9 @@ const DEPT_ID_ACC = {
     }
 
     if (byDept.size === 0) {
-      console.log(`[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`);
+      console.log(
+        `[${new Date().toISOString()}] [JOB] ${jobName}: No data. Skip notification.`,
+      );
       return;
     }
 
@@ -89,13 +100,18 @@ const DEPT_ID_ACC = {
         totalDevices: total,
         lateQty: late,
         todayQty,
-        reportUrl: process.env.REPORT_URL
+        reportUrl: process.env.REPORT_URL,
       });
     }
 
-    console.log(`[${new Date().toISOString()}] [JOB] ${jobName} === COMPLETED ===`);
+    console.log(
+      `[${new Date().toISOString()}] [JOB] ${jobName} === COMPLETED ===`,
+    );
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] [JOB] ${jobName} === FAILED ===`, err);
+    console.error(
+      `[${new Date().toISOString()}] [JOB] ${jobName} === FAILED ===`,
+      err,
+    );
     process.exit(1);
   } finally {
     await closePool();
