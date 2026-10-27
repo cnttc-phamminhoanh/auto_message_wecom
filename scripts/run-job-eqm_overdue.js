@@ -5,7 +5,7 @@ require("dotenv").config({
 });
 
 const { closePool } = require("../services/sql.service.js");
-const { sendOverdueSummary } = require("../services/wecom.eqm.service");
+const { sendOverdueSummary } = require("../services/wecom.eqm.service.js");
 
 (async () => {
   const jobName = "eqm_overdue";
