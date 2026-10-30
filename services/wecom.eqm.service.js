@@ -118,7 +118,7 @@ async function sendOverdueSummary(webhookUrl) {
 
   // ===== Tin nhắn 1: Thống kê tất cả phòng ban =====
   let content = `<font color="warning">🚨 **EQUIPMENT MAINTENANCE ALERT**</font>\n\n`;
-  content += `<font color="grey"> ─────────────────────────────</font>\n`;
+  content += `<font color="grey">──────────────────────────────</font>\n`;
   content += `📅 Date: **${summary.today}**\n\n`;
   content += `📊 Total Overdue: <font color="red">**${summary.total}**</font>\n\n`;
   content += `⚠️ **OVERDUE BY DEPARTMENT**\n`;
@@ -128,7 +128,14 @@ async function sendOverdueSummary(webhookUrl) {
     content += `>  **${dept.deptName}  :**  <font color="red">**${dept.count}**</font>\n`;
   }
   content += `\n\n`;
-  content += `Please check and handle promptly.`;
+  content += `Please check and handle promptly.\n`;
+  content += `<font color="grey">──────────────────────────────</font>\n`;
+
+  const dashboardUrl = process.env.REPORT_URL;
+  if (dashboardUrl) {
+    content += `<font color="grey">View Details</font>\t\t\t\t\t\t`;
+    content += `[**Open now >>**](${dashboardUrl})`;
+  }
 
   const { data: summaryData } = await axios.post(webhookUrl, {
     msgtype: "markdown",
