@@ -116,24 +116,39 @@ async function sendOverdueSummary(webhookUrl) {
 
   //   content += `\nPlease check and handle promptly.`;
 
-  // ===== Tin nhắn 1: Thống kê tất cả phòng ban =====
-  let content = `<font color="warning">🚨 **EQUIPMENT MAINTENANCE ALERT**</font>\n\n`;
-  content += `<font color="grey">──────────────────────────────</font>\n`;
-  content += `📅 Date: **${summary.today}**\n\n`;
-  content += `📊 Total Overdue: <font color="red">**${summary.total}**</font>\n\n`;
-  content += `⚠️ **OVERDUE BY DEPARTMENT**\n`;
+  // ===== Tin nhắn 1: Thống kê tất cả phòng ban (song ngữ EN / 中文) =====
+  let content = "";
 
-  // ===== Thống kê phòng ban =====
+  // Tiêu đề: cùng cấp heading, độ rộng EN ≈ CN
+  content += `# 🚨 <font color="warning">MAINTENANCE ALERT</font>\n`;
+  content += `# <font color="warning">　　  设备维护逾期警报</font>\n\n`;
+  content += `<font color="grey">────────────────────────</font>\n`;
+
+  // Ngày
+  content += `📅 Date：**　　　　${summary.today}**\n`;
+  content += `<font color="comment">　　/日期</font>\n\n`;
+
+  // Tổng quá hạn: mỗi ngôn ngữ 1 dòng, giá trị chỉ ghi 1 lần
+  content += `⏱️ Total Overdue：**　　　　  ${summary.total}**\n`;
+  content += `<font color="comment">　　/逾期总数</font>\n\n`;
+
+  // Theo phòng ban
+  content += `⚠️ **Overdue by Department**\n`;
+  content += `　　<font color="comment">/各部门逾期数量</font>\n\n`;
   for (const dept of departments) {
     content += `>  **${dept.deptName}  :**  <font color="red">**${dept.count}**</font>\n`;
   }
   content += `\n\n`;
-  content += `Please check and handle promptly.\n`;
-  content += `<font color="grey">──────────────────────────────</font>\n`;
 
+  // Lời nhắc
+  content += `Please check and handle promptly.\n`;
+  content += `<font color="comment">请及时检查并处理。</font>\n\n`;
+  content += `<font color="grey">────────────────────────</font>\n`;
+
+  // Link
   const dashboardUrl = process.env.REPORT_URL;
   if (dashboardUrl) {
-    content += `<font color="grey">View Details</font>\t\t\t\t\t\t`;
+    content += `<font color="grey">View Details</font>\t\t\t`;
     content += `[**Open now >>**](${dashboardUrl})`;
   }
 
